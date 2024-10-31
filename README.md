@@ -23,3 +23,10 @@ conda activate jobfit_env
 pip install -r requirements.txt
 ```
 
+### Team Members
+- Sasi Vattikuti
+- Ryan Bolin
+- Shantanu Ingalagi
+- Tanmay Grandhisiri
+- Sanya Nigam
+

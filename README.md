@@ -38,7 +38,7 @@ LR is often a strong baseline model for text classification tasks. Because it is
 LR shows consistent accuracy with minimal overfitting. It gives us a solid baseline for comparing, although this simplicity did limit its ability to find complex relationships in the data.
 
 From our model:
-```
+```python
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
@@ -64,7 +64,7 @@ We decided to use KNN in order to observe the impact of a non-linear and distanc
 Although KNN is effective in finding local patterns in the data, it was overall slower and prone to overfitting on our multi-dimensional TF-IDF features as opposed to other models. However, it was powerful when it came to capruring sample-based relationships that some linear models might midd.
 
 From our model:
-```
+```python
 from sklearn.neighbors import KNeighborsClassifier
 
 pipeline = Pipeline([
@@ -90,7 +90,7 @@ We included MNB because of its known strong performance in text classification, 
 MNV performed well, with quick training and high accuracy on both sets. But, its independence assumption limits its ability to find dependencies inbetween words, so it may underperform on complicated and context-heavy data.
 
 From our model:
-```
+```python
 from sklearn.naive_bayes import MultinomialNB
 
 pipeline = Pipeline([
@@ -116,7 +116,7 @@ We included BNB in order to compare the effects of treating words as either pres
 NBM showed a comparable performance to MNB but was slightly worse in accuracy because of the high dimensionality of TF-IDF data and lack of boolean encoding. However, it give insight into how the binary feature assumption can affect performance.
 
 From our model:
-```
+```python
 from sklearn.naive_bayes import BernoulliNB
 
 pipeline = Pipeline([
@@ -132,6 +132,38 @@ param_grid = {
 grid_search_bernoulli_nb = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1, verbose=2)
 grid_search_bernoulli_nb.fit(X, y)
 ```
+
+
+#### 5. Siamese BERT Neural Network
+
+We also implemented a Siamese BERT Neural Network model to compare the performance of traditional machine learning models with deep learning models. The Siamese BERT model is a neural network that uses the BERT model to encode the input text data and then uses a similarity function to compare the embeddings of the two input texts. The model is trained to predict whether the two input texts are similar or dissimilar. The model was only trained for 3 epochs due to computational constraints.
+
+From our model:
+```python
+class SBERT(nn.Module):
+    def __init__(self, bert_model):
+        super(SBERT, self).__init__()
+        self.bert = bert_model
+        self.fc = nn.Linear(self.bert.config.hidden_size * 3, 3)  # 3 classes for classification
+
+    def forward(self, input_ids_a, attention_mask_a, input_ids_b, attention_mask_b):
+        outputs_a = self.bert(input_ids_a, attention_mask=attention_mask_a)
+        pooled_output_a = outputs_a.last_hidden_state[:, 0, :]  # CLS token for sentence A
+
+        outputs_b = self.bert(input_ids_b, attention_mask=attention_mask_b)
+        pooled_output_b = outputs_b.last_hidden_state[:, 0, :]  # CLS token for sentence B
+
+        abs_diff = torch.abs(pooled_output_a - pooled_output_b)
+        combined = torch.cat((pooled_output_a, pooled_output_b, abs_diff), dim=1)
+        logits = self.fc(combined)
+
+        return logits  # Return raw logits; softmax will be applied in loss calculation
+```
+
+Performance of the model:
+* Evaluation accuracy: 0.704
+* Testing accuracy: 0.5571
+
 
 ### Team Members
 - Sasi Vattikuti

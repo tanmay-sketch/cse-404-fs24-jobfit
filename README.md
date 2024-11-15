@@ -55,13 +55,17 @@ grid_search = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n_job
 grid_search.fit(X, y)
 ```
 
+Performance of the model:
+* Evaluation accuracy: 0.664
+* Testing accuracy: 0.499
+
 #### 2. K-Nearest Neighbor (KNN)
 
 KNN is an instance-based algorith that classifies samples based on the highest majority label of its nearest neighbors inside of the feature space. In our model, we used TF-IDF to turn the text data into feature vectors, allowing KNN to find the distances between the sample.
 
 We decided to use KNN in order to observe the impact of a non-linear and distance-based model on our text data. KNN's performance depends on selecting the appropriate number of neighbors as well as a distance metric, making it a strong candidate for parameter tuning.
 
-Although KNN is effective in finding local patterns in the data, it was overall slower and prone to overfitting on our multi-dimensional TF-IDF features as opposed to other models. However, it was powerful when it came to capruring sample-based relationships that some linear models might midd.
+Although KNN is effective in finding local patterns in the data, it was overall slower and prone to overfitting on our multi-dimensional TF-IDF features as opposed to other models. However, it was powerful when it came to capturing sample-based relationships that some linear models might miss.
 
 From our model:
 ```python
@@ -81,13 +85,17 @@ grid_search_knn = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n
 grid_search_knn.fit(X, y)
 ```
 
+Performance of the model:
+* Evaluation accuracy: 0.532
+* Testing accuracy: 0.493
+
 #### 3. Multinomial Naive Bayes (MNB)
 
 MNB is a probabilistic classifier that is based on the Bayes' Theorem. It assumes that features or words are independent given the class. It is often utilized in text classification because it directly models the distributon of word counts.
 
 We included MNB because of its known strong performance in text classification, particularly with TF-IDF or word count vectors. It is able to handle multi-dimensional data well and often serves as a strong baseline for text-classification.
 
-MNV performed well, with quick training and high accuracy on both sets. But, its independence assumption limits its ability to find dependencies inbetween words, so it may underperform on complicated and context-heavy data.
+MNB performed well, with quick training and high accuracy on both sets. But, its independence assumption limits its ability to find dependencies inbetween words, so it may underperform on complicated and context-heavy data.
 
 From our model:
 ```python
@@ -106,6 +114,10 @@ param_grid = {
 grid_search_nb = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1, verbose=2)
 grid_search_nb.fit(X, y)
 ```
+
+Performance of the model:
+* Evaluation accuracy: 0.558
+* Testing accuracy: 0.493
 
 #### 4. Bernoulli Naive Bayes (BNB)
 
@@ -132,6 +144,10 @@ param_grid = {
 grid_search_bernoulli_nb = GridSearchCV(pipeline, param_grid, cv=5, scoring='accuracy', n_jobs=-1, verbose=2)
 grid_search_bernoulli_nb.fit(X, y)
 ```
+
+Performance of the model:
+* Evaluation accuracy: 0.5404
+* Testing accuracy: 0.443
 
 
 #### 5. Siamese BERT Neural Network

@@ -20,7 +20,7 @@ wandb.login(key=wandb_api_key)
 config = {
     'batch_size': 4,
     'epochs': 10,
-    'learning_rate': 2e-5,
+    'learning_rate': 5e-5,
     'model': 'SBERTSoftmax',
     'optimizer': 'Adam',
     'scheduler': 'StepLR',
@@ -32,7 +32,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-2",
+    name="sbert-training-3",
     reinit=True
 )
 

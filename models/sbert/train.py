@@ -3,11 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
 import wandb
-from models import SBERTSoftmax, distilbert_model
-from load_data import get_tokenized_data_loaders
+from models import SBERTSoftmax
+from load_data import TokenizeDataLoaders
 from dotenv import load_dotenv
 from sklearn.metrics import precision_recall_fscore_support
 import os
+from transformers import DistilBertTokenizer, DistilBertModel
 
 # Loading the API key from the .env file
 load_dotenv()
@@ -37,16 +38,28 @@ run = wandb.init(
 
 config = wandb.config
 
-train_df = pd.read_csv('../data/processed_train.csv')
-eval_df = pd.read_csv('../data/processed_eval.csv')
-test_df = pd.read_csv('../data/processed_test.csv')
+train_df = pd.read_csv('../../data/processed_train.csv')
+eval_df = pd.read_csv('../../data/processed_eval.csv')
+test_df = pd.read_csv('../../data/processed_test.csv')
 
-train_loader, eval_loader, test_loader = get_tokenized_data_loaders(train_df, eval_df, test_df) 
+# Initialize tokenizer
+tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+
+# Initialize DataLoaders
+data_loaders = TokenizeDataLoaders(
+    tokenizer=tokenizer,
+    batch_size=config.batch_size,
+    max_length=512,
+    num_workers=2
+)
+
+train_loader, eval_loader, test_loader = data_loaders.get_tokenized_data_loaders(train_df, eval_df, test_df) 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 print(f'Using device: {device}')
 
-model, tokenizer = distilbert_model()
+# Initialize model
+model = DistilBertModel.from_pretrained('distilbert-base-uncased')
 model = model.to(device)
 
 sbertsoftmax = SBERTSoftmax(model).to(device)
@@ -57,7 +70,7 @@ optimizer = optim.Adam(sbertsoftmax.parameters(), lr=config.learning_rate)
 # learning rate scheduler
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)    
 
-num_epochs = 10
+num_epochs = config.epochs
 
 for epoch in range(num_epochs):
     sbertsoftmax.train()
@@ -78,10 +91,10 @@ for epoch in range(num_epochs):
 
     wandb.log({
         "epoch": epoch + 1,
-        "train_loss": loss / len(train_loader)
+        "train_loss": epoch_loss / len(train_loader)
     })
 
-    print(f"Epoch {epoch}, Training Loss: {epoch_loss}")
+    print(f"Epoch {epoch + 1}, Training Loss: {epoch_loss / len(train_loader)}")
 
     sbertsoftmax.eval()
     eval_loss = 0
@@ -170,6 +183,5 @@ wandb.log({
     "recall": recall,
     "f1": f1
 })
-
 
 run.finish()

@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from transformers import DistilBertTokenizer, DistilBertModel
 
 class SBERTSoftmax(nn.Module):
-    def __init__(self,model):
+    def __init__(self, model):
         super(SBERTSoftmax, self).__init__()
         self.model = model
         self.dropout = nn.Dropout(p=0.2)
@@ -23,8 +21,3 @@ class SBERTSoftmax(nn.Module):
         logits = self.fc(combined)
 
         return logits
-    
-def distilbert_model():
-    model = DistilBertModel.from_pretrained('distilbert-base-uncased')
-    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
-    return model, tokenizer

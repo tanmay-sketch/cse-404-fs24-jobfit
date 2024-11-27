@@ -32,15 +32,19 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-3",
+    name="sbert-training-4",
     reinit=True
 )
 
 config = wandb.config
 
-train_df = pd.read_csv('../../data/processed_train.csv')
-eval_df = pd.read_csv('../../data/processed_eval.csv')
-test_df = pd.read_csv('../../data/processed_test.csv')
+# train_df = pd.read_csv('../../data/processed_train.csv')
+# eval_df = pd.read_csv('../../data/processed_eval.csv')
+# test_df = pd.read_csv('../../data/processed_test.csv')
+
+train_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_train.csv')
+eval_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_eval.csv')
+test_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_test.csv')
 
 # Initialize tokenizer
 tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
@@ -68,7 +72,7 @@ loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(sbertsoftmax.parameters(), lr=config.learning_rate)
 
 # learning rate scheduler
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)    
+# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)    
 
 num_epochs = config.epochs
 
@@ -128,7 +132,7 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch + 1}, Eval Loss: {eval_loss:.4f}, Eval Accuracy: {eval_accuracy:.4f}")
 
-    scheduler.step()
+    # scheduler.step()
 
 # ------------ Evaluating Test Loss --------------
 sbertsoftmax.eval()

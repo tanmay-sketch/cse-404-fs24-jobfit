@@ -4,6 +4,7 @@ import torch.optim as optim
 import pandas as pd
 import wandb
 from models import SBERTSoftmax
+from models import SBERTCosineSimilarity
 from load_data import TokenizeDataLoaders
 from dotenv import load_dotenv
 from sklearn.metrics import precision_recall_fscore_support
@@ -21,18 +22,19 @@ config = {
     'batch_size': 4,
     'epochs': 10,
     'learning_rate': 5e-5,
-    'model': 'SBERTSoftmax',
+    'model': 'SBERTCosineSimilarity',
     'optimizer': 'Adam',
     'scheduler': 'StepLR',
     'scheduler_step_size': 1,
     'scheduler_gamma': 0.1,
     'loss': 'CrossEntropyLoss',
+    'weight_decay': 1e-4
 }
 
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-4",
+    name="sbert-training-7",
     reinit=True
 )
 
@@ -60,16 +62,25 @@ data_loaders = TokenizeDataLoaders(
 train_loader, eval_loader, test_loader = data_loaders.get_tokenized_data_loaders(train_df, eval_df, test_df) 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
-print(f'Using device: {device}')
+
+if torch.cuda.device_count() > 1:
+   print(f"Using {torch.cuda.device_count()} GPUs!")
+else:
+    print(f'Using device: {device}')
 
 # Initialize model
 model = DistilBertModel.from_pretrained('distilbert-base-uncased')
 model = model.to(device)
 
 sbertsoftmax = SBERTSoftmax(model).to(device)
+sbertcosinesimilarity = SBERTCosineSimilarity(model).to(device)
+
+if torch.cuda.device_count() > 1:
+    model = nn.DataParallel(sbertcosinesimilarity)
+
 loss_fn = nn.CrossEntropyLoss()
 
-optimizer = optim.Adam(sbertsoftmax.parameters(), lr=config.learning_rate)
+optimizer = optim.Adam(sbertcosinesimilarity.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 
 # learning rate scheduler
 # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)    
@@ -77,7 +88,7 @@ optimizer = optim.Adam(sbertsoftmax.parameters(), lr=config.learning_rate)
 num_epochs = config.epochs
 
 for epoch in range(num_epochs):
-    sbertsoftmax.train()
+    sbertcosinesimilarity.train()
     epoch_loss = 0
     for batch in train_loader:
         input_ids_resume = batch['input_ids_resume'].to(device)
@@ -87,7 +98,7 @@ for epoch in range(num_epochs):
         labels = batch['labels'].to(device)
 
         optimizer.zero_grad()
-        logits = sbertsoftmax(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+        logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
         loss = loss_fn(logits, labels)
         loss.backward()
         optimizer.step()
@@ -100,7 +111,7 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch + 1}, Training Loss: {epoch_loss / len(train_loader)}")
 
-    sbertsoftmax.eval()
+    sbertcosinesimilarity.eval()
     eval_loss = 0
     correct_preds = 0
     total_preds = 0
@@ -113,7 +124,7 @@ for epoch in range(num_epochs):
             attention_mask_job_description = batch['attention_mask_job_description'].to(device)
             labels = batch['labels'].to(device)
 
-            logits = sbertsoftmax(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+            logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
             loss = loss_fn(logits, labels)
             eval_loss += loss.item()
 
@@ -135,7 +146,7 @@ for epoch in range(num_epochs):
     # scheduler.step()
 
 # ------------ Evaluating Test Loss --------------
-sbertsoftmax.eval()
+sbertcosinesimilarity.eval()
 test_loss = 0
 correct_preds = 0
 total_preds = 0
@@ -147,7 +158,7 @@ with torch.no_grad():
         attention_mask_job_description = batch['attention_mask_job_description'].to(device)
         labels = batch['labels'].to(device)
 
-        logits = sbertsoftmax(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+        logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
         loss = loss_fn(logits, labels)
         test_loss += loss.item()
 
@@ -165,7 +176,7 @@ wandb.log({
 })
 
 # ------------ Evaluating Precision, Recall, F1 Score --------------
-sbertsoftmax.eval()
+sbertcosinesimilarity.eval()
 y_true = []
 y_pred = []
 with torch.no_grad():
@@ -176,7 +187,7 @@ with torch.no_grad():
         attention_mask_job_description = batch['attention_mask_job_description'].to(device)
         labels = batch['labels'].to(device)
 
-        logits = sbertsoftmax(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+        logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
         _, predicted = torch.max(logits, 1)
         y_true.extend(labels.cpu().numpy())
         y_pred.extend(predicted.cpu().numpy())

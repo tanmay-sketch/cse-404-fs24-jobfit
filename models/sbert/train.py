@@ -3,13 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 import pandas as pd
 import wandb
-from models import SBERTSoftmax
-from models import SBERTCosineSimilarity
+from models import SBERTSoftmax, SBERTCosineSimilarity, SBERTHybrid
 from load_data import TokenizeDataLoaders
 from dotenv import load_dotenv
 from sklearn.metrics import precision_recall_fscore_support
 import os
-from transformers import DistilBertTokenizer, DistilBertModel
+from transformer_factory import TransformerFactory
 
 # Loading the API key from the .env file
 load_dotenv()
@@ -24,9 +23,6 @@ config = {
     'learning_rate': 5e-5,
     'model': 'SBERTCosineSimilarity',
     'optimizer': 'Adam',
-    'scheduler': 'StepLR',
-    'scheduler_step_size': 1,
-    'scheduler_gamma': 0.1,
     'loss': 'CrossEntropyLoss',
     'weight_decay': 1e-4
 }
@@ -48,8 +44,15 @@ train_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/
 eval_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_eval.csv')
 test_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_test.csv')
 
-# Initialize tokenizer
-tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
+
+if torch.cuda.device_count() > 1:
+   print(f"Using {torch.cuda.device_count()} GPUs!")
+else:
+    print(f'Using device: {device}')
+
+model, tokenizer = TransformerFactory.get_tokenizer_and_model('distilbert')
+model = model.to(device)
 
 # Initialize DataLoaders
 data_loaders = TokenizeDataLoaders(
@@ -61,34 +64,21 @@ data_loaders = TokenizeDataLoaders(
 
 train_loader, eval_loader, test_loader = data_loaders.get_tokenized_data_loaders(train_df, eval_df, test_df) 
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
-
-if torch.cuda.device_count() > 1:
-   print(f"Using {torch.cuda.device_count()} GPUs!")
-else:
-    print(f'Using device: {device}')
-
-# Initialize model
-model = DistilBertModel.from_pretrained('distilbert-base-uncased')
-model = model.to(device)
-
 sbertsoftmax = SBERTSoftmax(model).to(device)
 sbertcosinesimilarity = SBERTCosineSimilarity(model).to(device)
+sberthybrid = SBERTHybrid(model).to(device)
 
 if torch.cuda.device_count() > 1:
-    model = nn.DataParallel(sbertcosinesimilarity)
+    model = nn.DataParallel(sberthybrid)
 
 loss_fn = nn.CrossEntropyLoss()
 
-optimizer = optim.Adam(sbertcosinesimilarity.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
-
-# learning rate scheduler
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config.scheduler_step_size, gamma=config.scheduler_gamma)    
+optimizer = optim.Adam(sberthybrid.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 
 num_epochs = config.epochs
 
 for epoch in range(num_epochs):
-    sbertcosinesimilarity.train()
+    sberthybrid.train()
     epoch_loss = 0
     for batch in train_loader:
         input_ids_resume = batch['input_ids_resume'].to(device)
@@ -98,7 +88,7 @@ for epoch in range(num_epochs):
         labels = batch['labels'].to(device)
 
         optimizer.zero_grad()
-        logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+        logits = sberthybrid(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
         loss = loss_fn(logits, labels)
         loss.backward()
         optimizer.step()
@@ -111,7 +101,7 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch + 1}, Training Loss: {epoch_loss / len(train_loader)}")
 
-    sbertcosinesimilarity.eval()
+    sberthybrid.eval()
     eval_loss = 0
     correct_preds = 0
     total_preds = 0
@@ -124,7 +114,7 @@ for epoch in range(num_epochs):
             attention_mask_job_description = batch['attention_mask_job_description'].to(device)
             labels = batch['labels'].to(device)
 
-            logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+            logits = sberthybrid(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
             loss = loss_fn(logits, labels)
             eval_loss += loss.item()
 
@@ -146,7 +136,7 @@ for epoch in range(num_epochs):
     # scheduler.step()
 
 # ------------ Evaluating Test Loss --------------
-sbertcosinesimilarity.eval()
+sberthybrid.eval()
 test_loss = 0
 correct_preds = 0
 total_preds = 0
@@ -158,7 +148,7 @@ with torch.no_grad():
         attention_mask_job_description = batch['attention_mask_job_description'].to(device)
         labels = batch['labels'].to(device)
 
-        logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+        logits = sberthybrid(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
         loss = loss_fn(logits, labels)
         test_loss += loss.item()
 
@@ -176,7 +166,7 @@ wandb.log({
 })
 
 # ------------ Evaluating Precision, Recall, F1 Score --------------
-sbertcosinesimilarity.eval()
+sberthybrid.eval()
 y_true = []
 y_pred = []
 with torch.no_grad():
@@ -187,7 +177,7 @@ with torch.no_grad():
         attention_mask_job_description = batch['attention_mask_job_description'].to(device)
         labels = batch['labels'].to(device)
 
-        logits = sbertcosinesimilarity(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
+        logits = sberthybrid(input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description)
         _, predicted = torch.max(logits, 1)
         y_true.extend(labels.cpu().numpy())
         y_pred.extend(predicted.cpu().numpy())

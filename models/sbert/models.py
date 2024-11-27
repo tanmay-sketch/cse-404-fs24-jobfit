@@ -48,7 +48,7 @@ class SBERTCosineSimilarity(nn.Module):
 
 class SBERTHybrid(nn.Module):
     def __init__(self, model):
-        super(SBERTCosineSimilarity, self).__init__()
+        super(SBERTHybrid, self).__init__()
         self.model = model
         self.dropout = nn.Dropout(p=0.5)
         self.fc = nn.Linear(self.model.config.hidden_size * 3 + 1, 3) # + 1 for cosine similarityf

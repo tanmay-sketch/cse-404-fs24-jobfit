@@ -18,10 +18,11 @@ if wandb_api_key is None:
 wandb.login(key=wandb_api_key)
 
 config = {
-    'batch_size': 4,
+    'batch_size': 8,
     'epochs': 10,
     'learning_rate': 5e-5,
     'model': 'SBERTCosineSimilarity',
+    'llm': 'bert',
     'optimizer': 'Adam',
     'loss': 'CrossEntropyLoss',
     'weight_decay': 1e-4
@@ -30,7 +31,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-7",
+    name="sbert-training-9",
     reinit=True
 )
 
@@ -51,7 +52,9 @@ if torch.cuda.device_count() > 1:
 else:
     print(f'Using device: {device}')
 
-model, tokenizer = TransformerFactory.get_tokenizer_and_model('distilbert')
+transformer_handler = TransformerFactory()
+
+tokenizer, model = transformer_handler.get_tokenizer_and_model('bert')
 model = model.to(device)
 
 # Initialize DataLoaders

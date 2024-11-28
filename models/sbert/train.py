@@ -18,10 +18,10 @@ if wandb_api_key is None:
 wandb.login(key=wandb_api_key)
 
 config = {
-    'batch_size': 8,
+    'batch_size': 4,
     'epochs': 10,
-    'learning_rate': 5e-5,
-    'model': 'SBERTCosineSimilarity',
+    'learning_rate': 3e-5,
+    'model': 'SBERTHybrid',
     'llm': 'bert',
     'optimizer': 'Adam',
     'loss': 'CrossEntropyLoss',
@@ -31,7 +31,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-9",
+    name="sbert-training-10",
     reinit=True
 )
 
@@ -72,7 +72,7 @@ sbertcosinesimilarity = SBERTCosineSimilarity(model).to(device)
 sberthybrid = SBERTHybrid(model).to(device)
 
 if torch.cuda.device_count() > 1:
-    model = nn.DataParallel(sberthybrid)
+    sberthybrid = nn.DataParallel(sberthybrid)
 
 loss_fn = nn.CrossEntropyLoss()
 

@@ -22,7 +22,7 @@ config = {
     'epochs': 10,
     'learning_rate': 3e-5,
     'model': 'SBERTHybrid',
-    'llm': 'bert',
+    'llm': 'distilbert',
     'optimizer': 'Adam',
     'loss': 'CrossEntropyLoss',
     'weight_decay': 1e-4
@@ -31,7 +31,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-10",
+    name="sbert-training-12",
     reinit=True
 )
 
@@ -54,7 +54,7 @@ else:
 
 transformer_handler = TransformerFactory()
 
-tokenizer, model = transformer_handler.get_tokenizer_and_model('bert')
+tokenizer, model = transformer_handler.get_tokenizer_and_model('distilbert')
 model = model.to(device)
 
 # Initialize DataLoaders

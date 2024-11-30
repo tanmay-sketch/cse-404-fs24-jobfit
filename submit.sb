@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 
 # Type and number of GPUs
-#SBATCH --gpus=v100:1
+#SBATCH --gpus=v100:4
 
 # Total CPU memory:
 #SBATCH --mem=2G

@@ -5,7 +5,7 @@ class SBERTSoftmax(nn.Module):
     def __init__(self, model):
         super(SBERTSoftmax, self).__init__()
         self.model = model
-        self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.2)
         self.fc = nn.Linear(self.model.config.hidden_size * 3, 3)
 
     def forward(self, input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description):
@@ -26,7 +26,7 @@ class SBERTCosineSimilarity(nn.Module):
     def __init__(self, model):
         super(SBERTCosineSimilarity, self).__init__()
         self.model = model
-        self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.2)
         self.fc = nn.Linear(self.model.config.hidden_size * 2 + 1, 3) # + 1 for cosine similarity
     
     def forward(self, input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description):
@@ -50,7 +50,7 @@ class SBERTHybrid(nn.Module):
     def __init__(self, model):
         super(SBERTHybrid, self).__init__()
         self.model = model
-        self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.2)
         self.fc = nn.Linear(self.model.config.hidden_size * 3 + 1, 3) # + 1 for cosine similarityf
     
     def forward(self, input_ids_resume, attention_mask_resume, input_ids_job_description, attention_mask_job_description):

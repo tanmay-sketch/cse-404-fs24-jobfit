@@ -26,7 +26,7 @@ config = {
     'epochs': 10,
     'learning_rate': 3e-5,
     'model': 'SBERTHybrid',
-    'llm': 'bert',
+    'llm': 'distilbert',
     'optimizer': 'Adam',
     'loss': 'CrossEntropyLoss',
     'weight_decay': 1e-4
@@ -200,7 +200,7 @@ with torch.no_grad():
         _, predicted = torch.max(logits, 1)
         y_true.extend(labels.cpu().numpy())
         y_pred.extend(predicted.cpu().numpy())
-    
+
 precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
 wandb.log({
     "precision": precision,

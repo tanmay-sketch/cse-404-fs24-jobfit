@@ -58,8 +58,8 @@ class TokenizeDataLoaders:
         eval_dataset = TokenizeData(eval_data, self.tokenizer, self.max_length)
         test_dataset = TokenizeData(test_data, self.tokenizer, self.max_length)
 
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
-        eval_loader = DataLoader(eval_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,drop_last=True)
+        eval_loader = DataLoader(eval_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers,drop_last=False)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers,drop_last=False)
 
         return train_loader, eval_loader, test_loader

@@ -7,7 +7,11 @@ from models import SBERTSoftmax, SBERTCosineSimilarity, SBERTHybrid
 from load_data import TokenizeDataLoaders
 from dotenv import load_dotenv
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 import os
+import csv
 from transformer_factory import TransformerFactory
 
 # Loading the API key from the .env file
@@ -22,7 +26,7 @@ config = {
     'epochs': 10,
     'learning_rate': 3e-5,
     'model': 'SBERTHybrid',
-    'llm': 'distilbert',
+    'llm': 'bert',
     'optimizer': 'Adam',
     'loss': 'CrossEntropyLoss',
     'weight_decay': 1e-4
@@ -31,15 +35,11 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-12",
+    name="sbert-training-14",
     reinit=True
 )
 
 config = wandb.config
-
-# train_df = pd.read_csv('../../data/processed_train.csv')
-# eval_df = pd.read_csv('../../data/processed_eval.csv')
-# test_df = pd.read_csv('../../data/processed_test.csv')
 
 train_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_train.csv')
 eval_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/main/data/processed_eval.csv')
@@ -47,14 +47,16 @@ test_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/c
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
 
-if torch.cuda.device_count() > 1:
-   print(f"Using {torch.cuda.device_count()} GPUs!")
+num_gpus = torch.cuda.device_count()
+if num_gpus > 1 and config.batch_size % num_gpus != 0:
+    config.batch_size = (config.batch_size // num_gpus) * num_gpus
+    print(f"Adjusted batch size to {config.batch_size} for {num_gpus} GPUs")
 else:
     print(f'Using device: {device}')
 
 transformer_handler = TransformerFactory()
 
-tokenizer, model = transformer_handler.get_tokenizer_and_model('distilbert')
+tokenizer, model = transformer_handler.get_tokenizer_and_model('bert')
 model = model.to(device)
 
 # Initialize DataLoaders
@@ -67,19 +69,16 @@ data_loaders = TokenizeDataLoaders(
 
 train_loader, eval_loader, test_loader = data_loaders.get_tokenized_data_loaders(train_df, eval_df, test_df) 
 
-sbertsoftmax = SBERTSoftmax(model).to(device)
-sbertcosinesimilarity = SBERTCosineSimilarity(model).to(device)
 sberthybrid = SBERTHybrid(model).to(device)
 
 if torch.cuda.device_count() > 1:
     sberthybrid = nn.DataParallel(sberthybrid)
 
 loss_fn = nn.CrossEntropyLoss()
-
 optimizer = optim.Adam(sberthybrid.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
-
 num_epochs = config.epochs
 
+# Training and Evaluation Loop
 for epoch in range(num_epochs):
     sberthybrid.train()
     epoch_loss = 0
@@ -136,13 +135,13 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch + 1}, Eval Loss: {eval_loss:.4f}, Eval Accuracy: {eval_accuracy:.4f}")
 
-    # scheduler.step()
-
-# ------------ Evaluating Test Loss --------------
+# Test Evaluation with Misclassification Logging
 sberthybrid.eval()
 test_loss = 0
 correct_preds = 0
 total_preds = 0
+misclassified_samples = []
+
 with torch.no_grad():
     for batch in test_loader:
         input_ids_resume = batch['input_ids_resume'].to(device)
@@ -159,6 +158,16 @@ with torch.no_grad():
         correct_preds += (predicted == labels).sum().item()
         total_preds += labels.size(0)
 
+        # Log misclassified examples
+        for i in range(labels.size(0)):
+            if predicted[i] != labels[i]:
+                misclassified_samples.append({
+                    "true_label": labels[i].item(),
+                    "predicted_label": predicted[i].item(),
+                    "resume_text": tokenizer.decode(input_ids_resume[i].cpu(), skip_special_tokens=True),
+                    "job_description_text": tokenizer.decode(input_ids_job_description[i].cpu(), skip_special_tokens=True)
+                })
+
 test_loss /= len(test_loader)
 test_accuracy = correct_preds / total_preds
 print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}")
@@ -168,8 +177,15 @@ wandb.log({
     "test_accuracy": test_accuracy 
 })
 
-# ------------ Evaluating Precision, Recall, F1 Score --------------
-sberthybrid.eval()
+# Save misclassified examples to a CSV file
+with open('misclassified_samples.csv', 'w', newline='') as f:
+    writer = csv.DictWriter(f, fieldnames=["true_label", "predicted_label", "resume_text", "job_description_text"])
+    writer.writeheader()
+    writer.writerows(misclassified_samples)
+
+print(f"Misclassified examples saved to 'misclassified_samples.csv'")
+
+# Precision, Recall, F1 Score
 y_true = []
 y_pred = []
 with torch.no_grad():
@@ -191,5 +207,13 @@ wandb.log({
     "recall": recall,
     "f1": f1
 })
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.title('Confusion Matrix')
+wandb.log({"confusion_matrix": wandb.Image(plt)})
+plt.close()
 
 run.finish()

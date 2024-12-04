@@ -20,16 +20,38 @@ class TokenizeData(Dataset):
         return len(self.resume_text)
     
     def __getitem__(self, idx):
-        encoding_resume = self.tokenizer(
-            self.resume_text[idx],
+        resume_text = self.resume_text[idx]
+        job_description_text = self.job_description_text[idx]
+
+        # Split texts into two parts
+        resume_part1 = resume_text[:len(resume_text) // 2]
+        resume_part2 = resume_text[len(resume_text) // 2:]
+        job_part1 = job_description_text[:len(job_description_text) // 2]
+        job_part2 = job_description_text[len(job_description_text) // 2:]
+
+        encoding_resume1 = self.tokenizer(
+            resume_part1,
             padding='max_length',
             truncation=True,
             max_length=self.max_length,
             return_tensors='pt'
         )
-
-        encoding_job_description = self.tokenizer(
-            self.job_description_text[idx],
+        encoding_resume2 = self.tokenizer(
+            resume_part2,
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors='pt'
+        )
+        encoding_job1 = self.tokenizer(
+            job_part1,
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors='pt'
+        )
+        encoding_job2 = self.tokenizer(
+            job_part2,
             padding='max_length',
             truncation=True,
             max_length=self.max_length,
@@ -37,10 +59,14 @@ class TokenizeData(Dataset):
         )
 
         item = {
-            'input_ids_resume': encoding_resume['input_ids'].squeeze(0),
-            'attention_mask_resume': encoding_resume['attention_mask'].squeeze(0),
-            'input_ids_job_description': encoding_job_description['input_ids'].squeeze(0),
-            'attention_mask_job_description': encoding_job_description['attention_mask'].squeeze(0),
+            'input_ids_resume1': encoding_resume1['input_ids'].squeeze(0),
+            'attention_mask_resume1': encoding_resume1['attention_mask'].squeeze(0),
+            'input_ids_resume2': encoding_resume2['input_ids'].squeeze(0),
+            'attention_mask_resume2': encoding_resume2['attention_mask'].squeeze(0),
+            'input_ids_job1': encoding_job1['input_ids'].squeeze(0),
+            'attention_mask_job1': encoding_job1['attention_mask'].squeeze(0),
+            'input_ids_job2': encoding_job2['input_ids'].squeeze(0),
+            'attention_mask_job2': encoding_job2['attention_mask'].squeeze(0),
             'labels': torch.tensor(self.labels[idx], dtype=torch.long)
         }
 

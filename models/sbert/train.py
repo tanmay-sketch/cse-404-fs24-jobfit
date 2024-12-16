@@ -14,6 +14,8 @@ import os
 import csv
 from transformer_factory import TransformerFactory
 
+os.environ["WANDB_VERIFY_SSL"] = "false"
+
 # Loading the API key from the .env file
 load_dotenv()
 wandb_api_key = os.getenv('WANDB_API_KEY')

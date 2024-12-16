@@ -1,0 +1,24 @@
+Starting SBERT Training Script
+Using Python: /mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/bin/python
+Checking PyTorch installation...
+PyTorch version: 2.5.1+cu124
+NVIDIA A100-SXM4-80GB
+Running train.py...
+wandb: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: grandhi1 (makeai). Use `wandb login --relogin` to force relogin
+wandb: Appending key for api.wandb.ai to your netrc file: /mnt/home/grandhi1/.netrc
+wandb: ERROR failed to upsert bucket: api: failed sending: POST https://api.wandb.ai/graphql giving up after 1 attempt(s): Post "https://api.wandb.ai/graphql": tls: failed to verify certificate: x509: certificate signed by unknown authority
+Traceback (most recent call last):
+  File "/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert/train.py", line 35, in <module>
+    run = wandb.init(
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/wandb/sdk/wandb_init.py", line 1270, in init
+    wandb._sentry.reraise(e)
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/wandb/analytics/sentry.py", line 161, in reraise
+    raise exc.with_traceback(sys.exc_info()[2])
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/wandb/sdk/wandb_init.py", line 1256, in init
+    return wi.init()
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/wandb/sdk/wandb_init.py", line 847, in init
+    raise error
+wandb.errors.errors.CommError: failed to upsert bucket: api: failed sending: POST https://api.wandb.ai/graphql giving up after 1 attempt(s): Post "https://api.wandb.ai/graphql": tls: failed to verify certificate: x509: certificate signed by unknown authority
+srun: error: nal-008: task 0: Exited with exit code 1
+Job completed at Mon Dec 16 11:40:14 AM EST 2024

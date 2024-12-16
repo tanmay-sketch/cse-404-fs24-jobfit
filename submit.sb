@@ -10,26 +10,27 @@
 
 echo "Starting SBERT Training Script"
 
-# Purge modules and source .bashrc
+# Purge modules and load Conda
 module purge
-source ~/.bashrc
-echo "Bashrc sourced."
+module load Conda/3
 
-# Activate Conda environment
-echo "Activating Conda environment: jobfit_env"
+# Source Conda hooks and activate the environment
+source /mnt/home/grandhi1/miniforge3/etc/profile.d/conda.sh
 conda activate jobfit_env
 
-# Debugging: Confirm active environment and Python path
-echo "Active Conda environment: $(conda env list | grep '*')"
-echo "Python path: $(which python)"
+# Explicit Python path from the environment
+PYTHON_ENV=/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/bin/python
+
+# Debugging: Confirm the Python path
+echo "Using Python: $PYTHON_ENV"
 
 # Verify PyTorch installation
 echo "Checking PyTorch installation..."
-python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(torch.cuda.get_device_name(0))"
+$PYTHON_ENV -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(torch.cuda.get_device_name(0))"
 
 # Navigate to the working directory and run the script
 cd /mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert
 echo "Running train.py..."
-srun python train.py
+srun $PYTHON_ENV train.py
 
 echo "Job completed at $(date)"

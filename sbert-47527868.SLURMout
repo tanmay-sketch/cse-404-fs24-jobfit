@@ -1,0 +1,28 @@
+Starting SBERT Training Script
+Using Python: /mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/bin/python
+Checking PyTorch installation...
+PyTorch version: 2.5.1+cu124
+NVIDIA A100-SXM4-80GB
+Running train.py...
+wandb: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: grandhi1 (makeai). Use `wandb login --relogin` to force relogin
+wandb: Appending key for api.wandb.ai to your netrc file: /mnt/home/grandhi1/.netrc
+wandb: Tracking run with wandb version 0.18.7
+wandb: Run data is saved locally in /mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert/wandb/run-20241216_114909-pxjv9a3p
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run sbert-training-18
+wandb: ⭐️ View project at https://wandb.ai/makeai/jobfit
+wandb: 🚀 View run at https://wandb.ai/makeai/jobfit/runs/pxjv9a3p
+/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/torch/utils/data/dataloader.py:617: UserWarning: This DataLoader will create 2 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(
+/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/torch/utils/data/dataloader.py:617: UserWarning: This DataLoader will create 2 worker processes in total. Our suggested max number of worker in current system is 1, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(
+Using device: cuda
+Traceback (most recent call last):
+  File "/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert/train.py", line 114, in <module>
+    ids = batch['ids']
+KeyError: 'ids'
+[1;34mwandb[0m: 🚀 View run [33msbert-training-18[0m at: [34mhttps://wandb.ai/makeai/jobfit/runs/pxjv9a3p[0m
+[1;34mwandb[0m: Find logs at: [1;35mwandb/run-20241216_114909-pxjv9a3p/logs[0m
+srun: error: nal-008: task 0: Exited with exit code 1
+Job completed at Mon Dec 16 11:49:22 AM EST 2024

@@ -1,0 +1,47 @@
+SBERT Training Script
+WARNING: Package(s) not found: pyparsing
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'pyparsing'
+Checking PyTorch installation...
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'torch'
+Running train.py...
+Traceback (most recent call last):
+srun: error: nal-002: task 0: Exited with exit code 1
+  File "/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert/train.py", line 1, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+JobId=47193343 JobName=sbert
+   UserId=grandhi1(6109932) GroupId=CMSE890_FS24_S601(2954) MCS_label=N/A
+   Priority=60116 Nice=0 Account=general QOS=grandhi1
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:00:18 TimeLimit=01:00:00 TimeMin=N/A
+   SubmitTime=2024-12-03T21:15:08 EligibleTime=2024-12-03T21:15:08
+   AccrueTime=2024-12-03T21:15:08
+   StartTime=2024-12-03T21:15:09 EndTime=2024-12-03T22:15:09 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2024-12-03T21:15:09 Scheduler=Main
+   Partition=general-short AllocNode:Sid=dev-amd20-v100:3161673
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=nal-002
+   BatchHost=nal-002
+   NumNodes=1 NumCPUs=1 NumTasks=1 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   ReqTRES=cpu=1,mem=2G,node=1,billing=311,gres/gpu=4
+   AllocTRES=cpu=1,mem=2G,node=1,billing=311,gres/gpu=4
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=1 MinMemoryNode=2G MinTmpDiskNode=0
+   Features=[intel14|intel16|intel18|(amr|acm)|nvf|nal|nif|amd24] DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/submit.sb
+   WorkDir=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit
+   Comment=stdout=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/%x-47193343.SLURMout 
+   StdErr=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/sbert-47193343.SLURMout
+   StdIn=/dev/null
+   StdOut=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/sbert-47193343.SLURMout
+   Power=
+   TresPerJob=gres:gpu:a100:4
+   MailUser=grandhi1@msu.edu MailType=INVALID_DEPEND,BEGIN,END,FAIL,REQUEUE,STAGE_OUT
+   
+

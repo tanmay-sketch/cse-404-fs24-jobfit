@@ -1,0 +1,51 @@
+#!/bin/bash --login
+# Job name:
+#SBATCH --job-name=sbert
+
+# Number of processes.
+#SBATCH --ntasks=1
+
+# Type and number of GPUs
+#SBATCH --gpus=a100:4
+
+# Total CPU memory:
+#SBATCH --mem=2G
+
+# Wall time:
+#SBATCH --time=01:00:00
+
+# Mail type:
+#SBATCH --mail-type=ALL
+
+# Mail address:
+#SBATCH --mail-user=grandhi1@msu.edu
+
+# Standard output and error to file:
+#SBATCH --output=%x-%j.SLURMout
+
+echo "SBERT Training Script"
+
+# Purge all modules and load Conda
+module purge
+source ~/.bashrc
+module load Conda/3
+
+# Load Conda and activate the environment
+source /mnt/ufs18/home-052/grandhi1/miniforge3/etc/profile.d/conda.sh
+conda activate jobfit_env
+
+# Debugging information
+echo "Python path: $(which python)"
+python -m pip list
+
+# Verify PyTorch availability
+echo "Checking PyTorch installation..."
+python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
+
+# Run the Python script
+echo "Running train.py..."
+cd /mnt/home/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert
+srun python train.py
+
+# Print SLURM job information
+scontrol show job $SLURM_JOB_ID

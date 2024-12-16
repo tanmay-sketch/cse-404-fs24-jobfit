@@ -1,0 +1,211 @@
+SBERT Training Script
+Python path: /mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/bin/python
+Package                   Version
+------------------------- --------------
+annotated-types           0.7.0
+anyio                     4.6.2.post1
+argon2-cffi               23.1.0
+argon2-cffi-bindings      21.2.0
+arrow                     1.3.0
+asttokens                 3.0.0
+async-lru                 2.0.4
+beautifulsoup4            4.12.3
+bleach                    6.2.0
+blis                      1.0.1
+catalogue                 2.0.10
+certifi                   2024.8.30
+charset-normalizer        3.4.0
+click                     8.1.7
+cloudpathlib              0.20.0
+comm                      0.2.2
+confection                0.1.5
+contourpy                 1.3.1
+cycler                    0.12.1
+cymem                     2.0.10
+debugpy                   1.8.9
+defusedxml                0.7.1
+docker-pycreds            0.4.0
+executing                 2.1.0
+fastjsonschema            2.21.1
+filelock                  3.16.1
+fonttools                 4.55.0
+fqdn                      1.5.1
+fsspec                    2024.10.0
+gitdb                     4.0.11
+GitPython                 3.1.43
+h11                       0.14.0
+httpcore                  1.0.7
+httpx                     0.28.0
+huggingface-hub           0.26.2
+idna                      3.10
+ipykernel                 6.29.5
+ipython                   8.30.0
+ipywidgets                8.1.5
+isoduration               20.11.0
+jedi                      0.19.2
+Jinja2                    3.1.4
+joblib                    1.4.2
+json5                     0.10.0
+jsonpointer               3.0.0
+jsonschema-specifications 2024.10.1
+jupyter_client            8.6.3
+jupyter-console           6.6.3
+jupyter_core              5.7.2
+jupyter_server_terminals  0.5.3
+jupyterlab_pygments       0.3.0
+jupyterlab_widgets        3.0.13
+kiwisolver                1.4.7
+langcodes                 3.5.0
+language_data             1.3.0
+marisa-trie               1.2.1
+markdown-it-py            3.0.0
+MarkupSafe                3.0.2
+matplotlib                3.9.3
+matplotlib-inline         0.1.7
+mdurl                     0.1.2
+mistune                   3.0.2
+mpmath                    1.3.0
+murmurhash                1.0.11
+nest-asyncio              1.6.0
+networkx                  3.4.2
+nltk                      3.9.1
+numpy                     2.0.2
+nvidia-cublas-cu12        12.4.5.8
+nvidia-cuda-cupti-cu12    12.4.127
+nvidia-cuda-nvrtc-cu12    12.4.127
+nvidia-cuda-runtime-cu12  12.4.127
+nvidia-cudnn-cu12         9.1.0.70
+nvidia-cufft-cu12         11.2.1.3
+nvidia-curand-cu12        10.3.5.147
+nvidia-cusolver-cu12      11.6.1.9
+nvidia-cusparse-cu12      12.3.1.170
+nvidia-nccl-cu12          2.21.5
+nvidia-nvjitlink-cu12     12.4.127
+nvidia-nvtx-cu12          12.4.127
+overrides                 7.7.0
+packaging                 24.2
+pandas                    2.2.3
+pandocfilters             1.5.1
+parso                     0.8.4
+pillow                    11.0.0
+pip                       24.3.1
+platformdirs              4.3.6
+preshed                   3.0.9
+prometheus_client         0.21.1
+prompt_toolkit            3.0.48
+protobuf                  5.28.3
+psutil                    6.1.0
+pure_eval                 0.2.3
+pydantic                  2.10.2
+pydantic_core             2.27.1
+Pygments                  2.18.0
+python-dateutil           2.9.0.post0
+python-dotenv             1.0.1
+python-json-logger        2.0.7
+pytz                      2024.2
+PyYAML                    6.0.2
+pyzmq                     26.2.0
+referencing               0.35.1
+regex                     2024.11.6
+requests                  2.32.3
+rfc3339-validator         0.1.4
+rfc3986-validator         0.1.1
+rich                      13.9.4
+rpds-py                   0.22.1
+safetensors               0.4.5
+scikit-learn              1.5.2
+scipy                     1.14.1
+seaborn                   0.13.2
+Send2Trash                1.8.3
+sentence-transformers     3.3.1
+sentry-sdk                2.19.0
+setproctitle              1.3.4
+setuptools                75.6.0
+shellingham               1.5.4
+six                       1.16.0
+smart-open                7.0.5
+smmap                     5.0.1
+sniffio                   1.3.1
+soupsieve                 2.6
+spacy                     3.8.2
+spacy-legacy              3.0.12
+spacy-loggers             1.0.5
+srsly                     2.4.8
+stack-data                0.6.3
+sympy                     1.13.1
+terminado                 0.18.1
+thinc                     8.3.2
+threadpoolctl             3.5.0
+tinycss2                  1.4.0
+tokenizers                0.20.4
+torch                     2.5.1
+torchvision               0.20.1
+tornado                   6.4.2
+tqdm                      4.67.1
+traitlets                 5.14.3
+transformers              4.46.3
+triton                    3.1.0
+typer                     0.13.1
+types-python-dateutil     2.9.0.20241003
+typing_extensions         4.12.2
+tzdata                    2024.2
+uri-template              1.3.0
+urllib3                   2.2.3
+wandb                     0.18.7
+wasabi                    1.1.3
+weasel                    0.4.1
+webcolors                 24.11.1
+websocket-client          1.8.0
+wheel                     0.45.1
+widgetsnbextension        4.0.13
+wrapt                     1.17.0
+Checking PyTorch installation...
+PyTorch version: 2.5.1+cu124
+Running train.py...
+Traceback (most recent call last):
+  File "/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/models/sbert/train.py", line 11, in <module>
+    import seaborn as sns
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/seaborn/__init__.py", line 2, in <module>
+    from .rcmod import *  # noqa: F401,F403
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/seaborn/rcmod.py", line 3, in <module>
+    import matplotlib as mpl
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/matplotlib/__init__.py", line 159, in <module>
+    from . import _api, _version, cbook, _docstring, rcsetup
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/matplotlib/rcsetup.py", line 29, in <module>
+    from matplotlib._fontconfig_pattern import parse_fontconfig_pattern
+  File "/mnt/ufs18/home-052/grandhi1/miniforge3/envs/jobfit_env/lib/python3.10/site-packages/matplotlib/_fontconfig_pattern.py", line 15, in <module>
+    from pyparsing import (
+ModuleNotFoundError: No module named 'pyparsing'
+srun: error: nal-002: task 0: Exited with exit code 1
+JobId=47193355 JobName=sbert
+   UserId=grandhi1(6109932) GroupId=CMSE890_FS24_S601(2954) MCS_label=N/A
+   Priority=60110 Nice=0 Account=general QOS=grandhi1
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:00:30 TimeLimit=01:00:00 TimeMin=N/A
+   SubmitTime=2024-12-03T21:16:35 EligibleTime=2024-12-03T21:16:35
+   AccrueTime=2024-12-03T21:16:35
+   StartTime=2024-12-03T21:16:35 EndTime=2024-12-03T22:16:35 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2024-12-03T21:16:35 Scheduler=Main
+   Partition=general-short AllocNode:Sid=dev-amd20-v100:3161673
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=nal-002
+   BatchHost=nal-002
+   NumNodes=1 NumCPUs=1 NumTasks=1 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   ReqTRES=cpu=1,mem=2G,node=1,billing=311,gres/gpu=4
+   AllocTRES=cpu=1,mem=2G,node=1,billing=311,gres/gpu=4
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=1 MinMemoryNode=2G MinTmpDiskNode=0
+   Features=[intel14|intel16|intel18|(amr|acm)|nvf|nal|nif|amd24] DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/submit.sb
+   WorkDir=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit
+   Comment=stdout=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/%x-47193355.SLURMout 
+   StdErr=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/sbert-47193355.SLURMout
+   StdIn=/dev/null
+   StdOut=/mnt/ufs18/home-052/grandhi1/Documents/cse-404-fs24-jobfit/sbert-47193355.SLURMout
+   Power=
+   TresPerJob=gres:gpu:a100:4
+   MailUser=grandhi1@msu.edu MailType=INVALID_DEPEND,BEGIN,END,FAIL,REQUEUE,STAGE_OUT
+   
+

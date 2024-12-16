@@ -26,7 +26,7 @@ config = {
     'epochs': 10,
     'learning_rate': 3e-5,
     'model': 'SBERTHybrid',
-    'llm': 'distilbert',
+    'llm': 'bert',
     'optimizer': 'Adam',
     'loss': 'CrossEntropyLoss',
     'weight_decay': 1e-4
@@ -35,7 +35,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-17",
+    name="sbert-training-18",
     reinit=True
 )
 
@@ -86,6 +86,14 @@ loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(sberthybrid.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
 num_epochs = config.epochs
 
+# Tracking performance per data point
+data_point_performance = {}
+
+# Add a unique identifier to each data point in the dataset
+train_df['id'] = range(len(train_df))
+eval_df['id'] = range(len(eval_df))
+test_df['id'] = range(len(test_df))
+
 # Training and Evaluation Loop
 for epoch in range(num_epochs):
     sberthybrid.train()
@@ -101,6 +109,7 @@ for epoch in range(num_epochs):
         input_ids_job2 = batch['input_ids_job2'].to(device)
         attention_mask_job2 = batch['attention_mask_job2'].to(device)
         labels = batch['labels'].to(device)
+        ids = batch['ids']
 
         optimizer.zero_grad()
         logits = sberthybrid(
@@ -137,6 +146,7 @@ for epoch in range(num_epochs):
             input_ids_job2 = batch['input_ids_job2'].to(device)
             attention_mask_job2 = batch['attention_mask_job2'].to(device)
             labels = batch['labels'].to(device)
+            ids = batch['ids']
 
             logits = sberthybrid(
                 input_ids_resume1, attention_mask_resume1, 
@@ -162,15 +172,48 @@ for epoch in range(num_epochs):
 
     print(f"Epoch {epoch + 1}, Eval Loss: {eval_loss:.4f}, Eval Accuracy: {eval_accuracy:.4f}")
 
+# Analyze data point performance
+consistently_good = []
+consistently_bad = []
+flaky = []
+
+for data_id, perf in data_point_performance.items():
+    if perf["correct"] == perf["total"]:
+        consistently_good.append(data_id)
+    elif perf["correct"] == 0:
+        consistently_bad.append(data_id)
+    else:
+        flaky.append(data_id)
+
+# Log and save the results
+with open('data_point_analysis.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Data ID', 'Category'])
+    for data_id in consistently_good:
+        writer.writerow([data_id, 'Consistently Good'])
+    for data_id in consistently_bad:
+        writer.writerow([data_id, 'Consistently Bad'])
+    for data_id in flaky:
+        writer.writerow([data_id, 'Flaky'])
+
+wandb.log({
+    "consistently_good": len(consistently_good),
+    "consistently_bad": len(consistently_bad),
+    "flaky": len(flaky)
+})
+
 # Test Evaluation and Metrics
 sberthybrid.eval()
 test_loss = 0
 correct_preds = 0
 total_preds = 0
 misclassified_samples = []
+y_true = []
+y_pred = []
 
 with torch.no_grad():
     for batch in test_loader:
+        # Move batch data to device
         input_ids_resume1 = batch['input_ids_resume1'].to(device)
         attention_mask_resume1 = batch['attention_mask_resume1'].to(device)
         input_ids_resume2 = batch['input_ids_resume2'].to(device)
@@ -181,6 +224,7 @@ with torch.no_grad():
         attention_mask_job2 = batch['attention_mask_job2'].to(device)
         labels = batch['labels'].to(device)
 
+        # Forward pass and calculate loss
         logits = sberthybrid(
             input_ids_resume1, attention_mask_resume1, 
             input_ids_resume2, attention_mask_resume2, 
@@ -190,10 +234,16 @@ with torch.no_grad():
         loss = loss_fn(logits, labels)
         test_loss += loss.item()
 
+        # Predictions
         _, predicted = torch.max(logits, 1)
         correct_preds += (predicted == labels).sum().item()
         total_preds += labels.size(0)
 
+        # Store true and predicted labels for metrics
+        y_true.extend(labels.cpu().numpy())
+        y_pred.extend(predicted.cpu().numpy())
+
+        # Track misclassified samples
         for i in range(labels.size(0)):
             if predicted[i] != labels[i]:
                 misclassified_samples.append({
@@ -203,13 +253,19 @@ with torch.no_grad():
                     "job_description_text": tokenizer.decode(batch['input_ids_job1'][i].cpu(), skip_special_tokens=True)
                 })
 
+# Calculate overall metrics
 test_loss /= len(test_loader)
 test_accuracy = correct_preds / total_preds
-print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}")
+precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
 
+# Log results
+print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}")
 wandb.log({
     "test_loss": test_loss,
-    "test_accuracy": test_accuracy 
+    "test_accuracy": test_accuracy,
+    "precision": precision,
+    "recall": recall,
+    "f1": f1
 })
 
 # Save misclassified examples
@@ -218,38 +274,7 @@ with open('misclassified_samples.csv', 'w', newline='') as f:
     writer.writeheader()
     writer.writerows(misclassified_samples)
 
-# Precision, Recall, F1 Score
-y_true = []
-y_pred = []
-with torch.no_grad():
-    for batch in test_loader:
-        input_ids_resume1 = batch['input_ids_resume1'].to(device)
-        attention_mask_resume1 = batch['attention_mask_resume1'].to(device)
-        input_ids_resume2 = batch['input_ids_resume2'].to(device)
-        attention_mask_resume2 = batch['attention_mask_resume2'].to(device)
-        input_ids_job1 = batch['input_ids_job1'].to(device)
-        attention_mask_job1 = batch['attention_mask_job1'].to(device)
-        input_ids_job2 = batch['input_ids_job2'].to(device)
-        attention_mask_job2 = batch['attention_mask_job2'].to(device)
-        labels = batch['labels'].to(device)
-
-        logits = sberthybrid(
-            input_ids_resume1, attention_mask_resume1, 
-            input_ids_resume2, attention_mask_resume2, 
-            input_ids_job1, attention_mask_job1, 
-            input_ids_job2, attention_mask_job2
-        )
-        _, predicted = torch.max(logits, 1)
-        y_true.extend(labels.cpu().numpy())
-        y_pred.extend(predicted.cpu().numpy())
-
-precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
-wandb.log({
-    "precision": precision,
-    "recall": recall,
-    "f1": f1
-})
-
+# Confusion Matrix and Visualization
 cm = confusion_matrix(y_true, y_pred)
 plt.figure(figsize=(10, 8))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')

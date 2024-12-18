@@ -13,9 +13,6 @@ import os
 import csv
 from transformer_factory import TransformerFactory
 
-# Disable SSL verification for WandB
-os.environ["WANDB_VERIFY_SSL"] = "false"
-
 # Load the WandB API key
 load_dotenv()
 wandb_api_key = os.getenv('WANDB_API_KEY')
@@ -23,7 +20,7 @@ if wandb_api_key is None:
     raise ValueError("WANDB_API_KEY not found. Please set it in the .env file.")
 wandb.login(key=wandb_api_key)
 
-# Configuration
+# WANDB Configuration
 config = {
     'batch_size': 4,
     'epochs': 10,
@@ -38,7 +35,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-19",
+    name="sbert-training-21",
     reinit=True
 )
 
@@ -48,6 +45,11 @@ config = wandb.config
 train_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/tanmay/data/processed_train_data.csv')
 eval_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/tanmay/data/processed_eval_data.csv')
 test_df = pd.read_csv('https://media.githubusercontent.com/media/tanmay-sketch/cse-404-fs24-jobfit/refs/heads/tanmay/data/processed_test_data.csv')
+
+# Add unique IDs to datasets
+train_df['id'] = range(len(train_df))
+eval_df['id'] = range(len(eval_df))
+test_df['id'] = range(len(test_df))
 
 # Setup device
 device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
@@ -66,7 +68,7 @@ data_loaders = TokenizeDataLoaders(
     tokenizer=tokenizer,
     batch_size=config.batch_size,
     max_length=512,
-    num_workers=1  # Avoid excessive worker warnings
+    num_workers=1  
 )
 
 train_loader, eval_loader, test_loader = data_loaders.get_tokenized_data_loaders(train_df, eval_df, test_df)
@@ -114,11 +116,12 @@ for epoch in range(num_epochs):
     print(f"Epoch {epoch + 1}, Training Loss: {epoch_loss / len(train_loader):.4f}")
 
 # Evaluation
-def evaluate(loader, name="Eval"):
+def evaluate(loader, dataset_df, name="Eval"):
     sberthybrid.eval()
     eval_loss, correct_preds, total_preds = 0, 0, 0
     y_true, y_pred = [], []
     misclassified_samples = []
+    all_predictions = []
 
     with torch.no_grad():
         for batch in loader:
@@ -131,7 +134,7 @@ def evaluate(loader, name="Eval"):
             input_ids_job2 = batch['input_ids_job2'].to(device)
             attention_mask_job2 = batch['attention_mask_job2'].to(device)
             labels = batch['labels'].to(device)
-
+            ids = batch['id']
             logits = sberthybrid(
                 input_ids_resume1, attention_mask_resume1,
                 input_ids_resume2, attention_mask_resume2,
@@ -148,7 +151,14 @@ def evaluate(loader, name="Eval"):
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(predicted.cpu().numpy())
 
+            # Collect predictions with IDs
             for i in range(labels.size(0)):
+                all_predictions.append({
+                    "id": ids[i].item(),
+                    "true_label": labels[i].item(),
+                    "predicted_label": predicted[i].item()
+                })
+
                 if predicted[i] != labels[i]:
                     misclassified_samples.append({
                         "true_label": labels[i].item(),
@@ -161,19 +171,43 @@ def evaluate(loader, name="Eval"):
     eval_loss /= len(loader)
     print(f"{name} Loss: {eval_loss:.4f}, {name} Accuracy: {eval_accuracy:.4f}")
     wandb.log({f"{name.lower()}_loss": eval_loss, f"{name.lower()}_accuracy": eval_accuracy})
-    return y_true, y_pred, misclassified_samples
+    return y_true, y_pred, misclassified_samples, all_predictions
 
-# Evaluate on test data
-y_true, y_pred, misclassified_samples = evaluate(test_loader, name="Test")
+try:
+    # Evaluate on test data
+    y_true, y_pred, misclassified_samples, all_predictions = evaluate(test_loader, test_df, name="Test")
 
-# Precision, Recall, F1 Score
-precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
-wandb.log({"precision": precision, "recall": recall, "f1": f1})
+    # Save predictions
+    all_predictions_df = pd.DataFrame(all_predictions)
+    all_predictions_df.to_csv("all_predictions.csv", index=False)
 
-# Save misclassified samples
-with open('misclassified_samples.csv', 'w', newline='') as f:
-    writer = csv.DictWriter(f, fieldnames=["true_label", "predicted_label", "resume_text", "job_description_text"])
-    writer.writeheader()
-    writer.writerows(misclassified_samples)
+    # Precision, Recall, F1 Score
+    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
+    wandb.log({
+        "precision": precision, 
+        "recall": recall, 
+        "f1": f1})
 
-run.finish()
+    # Confusion Matrix and Visualization
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=set(y_true), yticklabels=set(y_true))
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('Confusion Matrix')
+    plt.savefig("confusion_matrix.png")
+    wandb.log({"confusion_matrix": wandb.Image("confusion_matrix.png")})
+    plt.close()
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+    wandb.log({"error": str(e)})
+
+finally:
+     # Save the model
+    model_save_path = "sberthybrid_model.pt"
+    torch.save(sberthybrid.state_dict(), model_save_path)
+    wandb.save(model_save_path)
+
+    print("Cleaning up and finishing the run...")
+    run.finish()

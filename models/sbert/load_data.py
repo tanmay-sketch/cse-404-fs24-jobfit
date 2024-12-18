@@ -11,8 +11,10 @@ class TokenizeData(Dataset):
         self.resume_text = df['resume_text'].tolist()
         self.job_description_text = df['job_description_text'].tolist()
         self.labels = df['label'].tolist()
+        self.ids = df['id'].tolist()
         self.tokenizer = tokenizer
         self.max_length = max_length
+        
 
         assert len(self.resume_text) == len(self.job_description_text) == len(self.labels)
 
@@ -67,7 +69,8 @@ class TokenizeData(Dataset):
             'attention_mask_job1': encoding_job1['attention_mask'].squeeze(0),
             'input_ids_job2': encoding_job2['input_ids'].squeeze(0),
             'attention_mask_job2': encoding_job2['attention_mask'].squeeze(0),
-            'labels': torch.tensor(self.labels[idx], dtype=torch.long)
+            'labels': torch.tensor(self.labels[idx], dtype=torch.long),
+            'id': torch.tensor(self.ids[idx], dtype=torch.long)
         }
 
         return item

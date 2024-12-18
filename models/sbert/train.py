@@ -35,7 +35,7 @@ config = {
 run = wandb.init(
     project="jobfit",
     config=config,
-    name="sbert-training-21",
+    name="sbert-training-22",
     reinit=True
 )
 
@@ -120,8 +120,12 @@ def evaluate(loader, dataset_df, name="Eval"):
     sberthybrid.eval()
     eval_loss, correct_preds, total_preds = 0, 0, 0
     y_true, y_pred = [], []
-    misclassified_samples = []
     all_predictions = []
+
+    # Tracking data point classifications
+    well_scoring = []  # Data points scoring well
+    poorly_scoring = []  # Data points scoring poorly
+    flaky_data = set()  # IDs that are consistently unreliable
 
     with torch.no_grad():
         for batch in loader:
@@ -135,6 +139,7 @@ def evaluate(loader, dataset_df, name="Eval"):
             attention_mask_job2 = batch['attention_mask_job2'].to(device)
             labels = batch['labels'].to(device)
             ids = batch['id']
+
             logits = sberthybrid(
                 input_ids_resume1, attention_mask_resume1,
                 input_ids_resume2, attention_mask_resume2,
@@ -151,63 +156,91 @@ def evaluate(loader, dataset_df, name="Eval"):
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(predicted.cpu().numpy())
 
-            # Collect predictions with IDs
+            # Collect predictions and classify points
             for i in range(labels.size(0)):
-                all_predictions.append({
+                prediction_info = {
                     "id": ids[i].item(),
                     "true_label": labels[i].item(),
                     "predicted_label": predicted[i].item()
-                })
+                }
+                all_predictions.append(prediction_info)
 
-                if predicted[i] != labels[i]:
-                    misclassified_samples.append({
-                        "true_label": labels[i].item(),
-                        "predicted_label": predicted[i].item(),
-                        "resume_text": tokenizer.decode(batch['input_ids_resume1'][i].cpu(), skip_special_tokens=True),
-                        "job_description_text": tokenizer.decode(batch['input_ids_job1'][i].cpu(), skip_special_tokens=True)
-                    })
+                # Classify based on performance
+                if predicted[i] == labels[i]:
+                    well_scoring.append(prediction_info)
+                else:
+                    poorly_scoring.append(prediction_info)
 
     eval_accuracy = correct_preds / total_preds
     eval_loss /= len(loader)
     print(f"{name} Loss: {eval_loss:.4f}, {name} Accuracy: {eval_accuracy:.4f}")
     wandb.log({f"{name.lower()}_loss": eval_loss, f"{name.lower()}_accuracy": eval_accuracy})
-    return y_true, y_pred, misclassified_samples, all_predictions
 
+    # Identify flaky data points (occurring in both lists)
+    flaky_data = {item['id'] for item in well_scoring}.intersection({item['id'] for item in poorly_scoring})
+
+    return {
+        "y_true": y_true,
+        "y_pred": y_pred,
+        "all_predictions": all_predictions,
+        "well_scoring": well_scoring,
+        "poorly_scoring": poorly_scoring,
+        "flaky_data": flaky_data
+    }
+
+# Main Evaluation Flow
 try:
     # Evaluate on test data
-    y_true, y_pred, misclassified_samples, all_predictions = evaluate(test_loader, test_df, name="Test")
+    try:
+        eval_results = evaluate(test_loader, test_df, name="Test")
+        print("Evaluation completed successfully.")
+    except Exception as eval_error:
+        print(f"Error during evaluation: {eval_error}")
+        wandb.log({"evaluation_error": str(eval_error)})
+        eval_results = {}
 
-    # Save predictions
-    all_predictions_df = pd.DataFrame(all_predictions)
-    all_predictions_df.to_csv("all_predictions.csv", index=False)
+    # Save and log results if evaluation succeeded
+    if eval_results:
+        try:
+            # Save predictions
+            all_predictions_df = pd.DataFrame(eval_results["all_predictions"])
+            all_predictions_df.to_csv("all_predictions.csv", index=False)
+            print("Predictions saved successfully.")
 
-    # Precision, Recall, F1 Score
-    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted')
-    wandb.log({
-        "precision": precision, 
-        "recall": recall, 
-        "f1": f1})
+            # Log Precision, Recall, F1 Score
+            precision, recall, f1, _ = precision_recall_fscore_support(
+                eval_results["y_true"], eval_results["y_pred"], average='weighted'
+            )
+            wandb.log({"precision": precision, "recall": recall, "f1": f1})
+            print(f"Metrics logged successfully: Precision={precision:.4f}, Recall={recall:.4f}, F1={f1:.4f}")
 
-    # Confusion Matrix and Visualization
-    cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=set(y_true), yticklabels=set(y_true))
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title('Confusion Matrix')
-    plt.savefig("confusion_matrix.png")
-    wandb.log({"confusion_matrix": wandb.Image("confusion_matrix.png")})
-    plt.close()
+            # Log classified data points
+            print(f"Well-performing data points: {len(eval_results['well_scoring'])}")
+            print(f"Poorly-performing data points: {len(eval_results['poorly_scoring'])}")
+            print(f"Flaky data points needing attention: {len(eval_results['flaky_data'])}")
+            wandb.log({
+                "well_scoring_count": len(eval_results["well_scoring"]),
+                "poorly_scoring_count": len(eval_results["poorly_scoring"]),
+                "flaky_data_count": len(eval_results["flaky_data"])
+            })
+        except Exception as metrics_error:
+            print(f"Error saving predictions or logging metrics: {metrics_error}")
+            wandb.log({"metrics_error": str(metrics_error)})
 
-except Exception as e:
-    print(f"An error occurred: {e}")
-    wandb.log({"error": str(e)})
+except Exception as unexpected_error:
+    print(f"An unexpected error occurred: {unexpected_error}")
+    wandb.log({"unexpected_error": str(unexpected_error)})
 
 finally:
-     # Save the model
-    model_save_path = "sberthybrid_model.pt"
-    torch.save(sberthybrid.state_dict(), model_save_path)
-    wandb.save(model_save_path)
+    # Always save the model and clean up
+    try:
+        model_save_path = "sberthybrid_model.pt"
+        torch.save(sberthybrid.state_dict(), model_save_path)
+        wandb.save(model_save_path)
+        print(f"Model saved successfully at {model_save_path}.")
+    except Exception as model_save_error:
+        print(f"Error saving model: {model_save_error}")
+        wandb.log({"model_save_error": str(model_save_error)})
 
     print("Cleaning up and finishing the run...")
     run.finish()
